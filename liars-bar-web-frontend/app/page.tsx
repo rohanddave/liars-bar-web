@@ -17,38 +17,43 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-          <Link 
+          <Link
             href="/login"
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
             Play Now
-          </Link>
-          
-          <Link 
-            href="/rooms"
-            className="bg-transparent border-2 border-red-400 text-red-400 hover:bg-red-400 hover:text-black font-bold py-4 px-8 rounded-lg text-xl transition-all duration-200 transform hover:scale-105"
-          >
-            Browse Rooms
           </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-black/30 backdrop-blur-sm p-6 rounded-lg border border-red-700/30">
             <div className="text-4xl mb-4">🃏</div>
-            <h3 className="text-xl font-semibold text-red-300 mb-2">Strategic Gameplay</h3>
-            <p className="text-red-200/80">Master the art of deception and read your opponents</p>
+            <h3 className="text-xl font-semibold text-red-300 mb-2">
+              Strategic Gameplay
+            </h3>
+            <p className="text-red-200/80">
+              Master the art of deception and read your opponents
+            </p>
           </div>
-          
+
           <div className="bg-black/30 backdrop-blur-sm p-6 rounded-lg border border-red-700/30">
             <div className="text-4xl mb-4">👥</div>
-            <h3 className="text-xl font-semibold text-red-300 mb-2">Multiplayer Fun</h3>
-            <p className="text-red-200/80">Play with friends or compete against players worldwide</p>
+            <h3 className="text-xl font-semibold text-red-300 mb-2">
+              Multiplayer Fun
+            </h3>
+            <p className="text-red-200/80">
+              Play with friends or compete against players worldwide
+            </p>
           </div>
-          
+
           <div className="bg-black/30 backdrop-blur-sm p-6 rounded-lg border border-red-700/30">
             <div className="text-4xl mb-4">🎯</div>
-            <h3 className="text-xl font-semibold text-red-300 mb-2">Real-time Action</h3>
-            <p className="text-red-200/80">Fast-paced rounds with instant results and reactions</p>
+            <h3 className="text-xl font-semibold text-red-300 mb-2">
+              Real-time Action
+            </h3>
+            <p className="text-red-200/80">
+              Fast-paced rounds with instant results and reactions
+            </p>
           </div>
         </div>
 
