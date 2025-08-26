@@ -12,8 +12,8 @@ services:
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=oneprediction
-      - DATABASE_NAME=oneprediction
+      - DATABASE_PASSWORD=liarsbar
+      - DATABASE_NAME=liarsbar
       - MODE=DEV
       - RUN_MIGRATIONS=true
       - REDIS_HOST=redis
@@ -36,9 +36,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-db-dev
     environment:
-      - POSTGRES_DB=oneprediction
+      - POSTGRES_DB=liarsbar
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=oneprediction
+      - POSTGRES_PASSWORD=liarsbar
     ports:
       - '0.0.0.0:5432:5432'
     volumes:

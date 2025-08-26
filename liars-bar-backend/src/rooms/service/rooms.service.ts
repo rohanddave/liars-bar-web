@@ -1,11 +1,17 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Room, RoomStatus } from '../entities/room.entity';
 import { CreateRoomDto } from '../dto/create-room.dto';
 import { JoinRoomDto } from '../dto/join-room.dto';
 import { RoomsGateway } from '../gateway/rooms.gateway';
 import * as bcrypt from 'bcryptjs';
+import { MAX_ROOMS_PER_USER } from 'src/game/constants';
 
 @Injectable()
 export class RoomsService {
@@ -15,7 +21,26 @@ export class RoomsService {
     private roomsGateway: RoomsGateway,
   ) {}
 
-  async createRoom(createRoomDto: CreateRoomDto, userId: string): Promise<Room> {
+  async getActiveRoomsForUser(userId: string): Promise<Room[]> {
+    return this.roomsRepository.find({
+      where: {
+        hostUserId: userId,
+        status: Not(RoomStatus.FINISHED),
+      },
+    });
+  }
+
+  async createRoom(
+    createRoomDto: CreateRoomDto,
+    userId: string,
+  ): Promise<Room> {
+    const existingRoomCountForUser = (await this.getActiveRoomsForUser(userId))
+      .length;
+
+    if (existingRoomCountForUser >= MAX_ROOMS_PER_USER) {
+      throw new BadRequestException('User has reached the room creation limit');
+    }
+
     const hashedPassword = await bcrypt.hash(createRoomDto.password, 10);
 
     const room = this.roomsRepository.create({
@@ -38,7 +63,11 @@ export class RoomsService {
     return savedRoom;
   }
 
-  async joinRoom(roomId: string, joinRoomDto: JoinRoomDto, userId: string): Promise<Room> {
+  async joinRoom(
+    roomId: string,
+    joinRoomDto: JoinRoomDto,
+    userId: string,
+  ): Promise<Room> {
     const room = await this.roomsRepository.findOne({ where: { id: roomId } });
 
     if (!room) {
@@ -58,7 +87,10 @@ export class RoomsService {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(joinRoomDto.password, room.password);
+    const isPasswordValid = await bcrypt.compare(
+      joinRoomDto.password,
+      room.password,
+    );
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid room password');
     }
@@ -92,7 +124,7 @@ export class RoomsService {
     }
 
     // Remove user from room
-    room.players = room.players.filter(id => id !== userId);
+    room.players = room.players.filter((id) => id !== userId);
     room.currentPlayers = room.players.length;
 
     // If no players left, delete the room

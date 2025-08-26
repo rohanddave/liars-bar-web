@@ -14,3 +14,6 @@ export const DEFAULT_ROOM_CAPACITY = 4;
 // Revolver configuration
 export const REVOLVER_CHAMBERS = 6;
 export const BULLETS_IN_REVOLVER = 1;
+
+// Room constants
+export const MAX_ROOMS_PER_USER = 1;
