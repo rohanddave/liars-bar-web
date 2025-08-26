@@ -85,24 +85,6 @@ export class RoomsController {
     return this.roomsService.joinRoom(roomId, joinRoomDto, currentUser.userId);
   }
 
-  @Get('my-rooms')
-  @ApiOperation({
-    summary: 'Get user rooms',
-    description: 'Get all rooms the authenticated user is currently in'
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of user rooms',
-    type: [Room]
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - JWT token required'
-  })
-  async getUserRooms(@GetCurrentUser() currentUser: CurrentUser): Promise<Room[]> {
-    return this.roomsService.findUserRooms(currentUser.userId);
-  }
-
   @Get(':id')
   @ApiOperation({
     summary: 'Get room details',
