@@ -14,10 +14,6 @@ export interface User {
   username: string;
 }
 
-export interface LoginResponse {
-  access_token: string;
-}
-
 export interface CreateRoomRequest {
   password: string;
 }
@@ -49,5 +45,5 @@ export interface ApiError {
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  access_token: string;
 }
