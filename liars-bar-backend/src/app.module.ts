@@ -2,11 +2,12 @@ import * as redisStore from 'cache-manager-redis-store';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { GlobalJwtAuthGuard } from './auth/guards/global-jwt-auth.guard';
 import { RoomsModule } from './rooms/rooms.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
@@ -38,7 +39,13 @@ import { UsersModule } from './users/users.module';
     RoomsModule,
     UsersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: GlobalJwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
