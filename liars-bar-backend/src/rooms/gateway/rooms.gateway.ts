@@ -20,6 +20,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private connectedUsers = new Map<string, string>(); // socketId -> userId
+  // TODO: add map for roomId -> Game instance
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
