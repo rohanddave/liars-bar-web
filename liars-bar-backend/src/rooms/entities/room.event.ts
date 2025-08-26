@@ -1,0 +1,16 @@
+import { GameEventType } from 'src/game/action/event.enum';
+
+export enum RoomEvent {
+  GAME_STARTED = GameEventType.GAME_STARTED,
+  GAME_ENDED = GameEventType.GAME_ENDED,
+  PLAYER_INITIALIZED = GameEventType.PLAYER_INITIALIZED,
+  ROUND_STARTED = GameEventType.ROUND_STARTED,
+  ROUND_ENDED = GameEventType.ROUND_ENDED,
+  CLAIM_MADE = GameEventType.CLAIM_MADE,
+  CHALLENGE_MADE = GameEventType.CHALLENGE_MADE,
+  CHALLENGE_RESULT = GameEventType.CHALLENGE_RESULT,
+  PLAYER_SHOT = GameEventType.PLAYER_SHOT,
+  PLAYER_ELIMINATED = GameEventType.PLAYER_ELIMINATED,
+  TURN_CHANGED = GameEventType.TURN_CHANGED,
+  ROOM_JOINED = GameEventType.ROOM_JOINED,
+}
