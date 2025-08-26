@@ -165,4 +165,21 @@ export class RoomsService {
       },
     });
   }
+
+  // New method to check if user has access to a room
+  async checkUserRoomAccess(userId: string, roomId: string): Promise<boolean> {
+    try {
+      const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+      
+      if (!room) {
+        return false;
+      }
+      
+      // Check if user is in the room's players array
+      return room.players.includes(userId);
+    } catch (error) {
+      console.error(`Error checking room access: ${error.message}`);
+      return false;
+    }
+  }
 }
