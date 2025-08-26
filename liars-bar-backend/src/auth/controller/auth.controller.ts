@@ -11,13 +11,14 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'User login',
-    description: 'Authenticate user with username and password (encrypted by client) and return JWT token'
+    description:
+      'Authenticate user with username and password (encrypted by client) and return JWT token',
   })
   @ApiBody({
     type: LoginDto,
-    description: 'User credentials with encrypted password'
+    description: 'User credentials with encrypted password',
   })
   @ApiResponse({
     status: 201,
@@ -27,24 +28,23 @@ export class AuthController {
       properties: {
         access_token: {
           type: 'string',
-          description: 'JWT access token'
-        }
-      }
-    }
+          description: 'JWT access token',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid credentials'
+    description: 'Invalid credentials',
   })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
-  @Public()
   @Post('logout')
   @ApiOperation({
     summary: 'User logout',
-    description: 'Logout user (currently no server-side action required)'
+    description: 'Logout user (currently no server-side action required)',
   })
   @ApiResponse({
     status: 201,
@@ -54,10 +54,10 @@ export class AuthController {
       properties: {
         message: {
           type: 'string',
-          example: 'Logged out successfully'
-        }
-      }
-    }
+          example: 'Logged out successfully',
+        },
+      },
+    },
   })
   async logout() {
     return { message: 'Logged out successfully' };
