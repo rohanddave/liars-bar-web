@@ -1,6 +1,6 @@
 import { LoginRequest, LoginResponse, ApiError } from '../types/api';
 
-const API_BASE_URL = 'htttp://10.0.0.175:3000';
+const API_BASE_URL = 'http://10.0.0.175:3000';
 
 export class AuthService{
   static async login(credentials: LoginRequest): Promise<LoginResponse>{
@@ -17,7 +17,7 @@ export class AuthService{
       const error: ApiError = await response.json();
       throw new Error(error.message || 'login failed bruh');
     }
-    return response.json()
+    return response.json();
   }
 
   static async logout(): Promise<void> {
@@ -30,13 +30,13 @@ export class AuthService{
     });
   }
   static getToken(): string | null {
-    localStorage.setItem('accessToken', token);
-  }
-  static setToken(token: string): void{
     return localStorage.getItem('accessToken');
   }
+  static setToken(token: string): void{
+    localStorage.setItem('accessToken', token);
+  }
   static removeToken(): void{
-    localStorage.removeItem('accessToken')
+    localStorage.removeItem('accessToken');
   }
   static isAuthenticated(): boolean {
     return !!this.getToken();
