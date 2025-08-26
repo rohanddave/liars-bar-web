@@ -1,21 +1,21 @@
-export interface LoginRequest{
+export interface LoginRequest {
   username: string;
   password: string;
 }
 
-export interface UserAuth{
+export interface UserAuth {
   username: string;
   password: string;
   id: string;
 }
 
-export interface User{
+export interface User {
   id: string;
   username: string;
 }
 
 export interface CreateRoomRequest {
-  password: 
+  password: string;
 }
 
 export interface CreateRoomResponse {
@@ -23,23 +23,27 @@ export interface CreateRoomResponse {
   message?: string;
 }
 
-export interface JoinRoomRequest{
+export interface JoinRoomRequest {
   password: string;
 }
 
-export interface JoinRoomResponse{
+export interface JoinRoomResponse {
   success: boolean;
   message?: string;
 }
 
-export interface roomDetails{
+export interface RoomDetails {
   roomId: string;
   players: string[];
   isGame: boolean;
   maxPlayers: number;
 }
 
-export interface ApiError{
+export interface ApiError {
   message: string;
   statusCode?: number;
+}
+
+export interface LoginResponse {
+  accessToken: string;
 }

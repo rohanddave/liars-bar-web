@@ -1,45 +1,47 @@
-import { LoginRequest, LoginResponse, ApiError } from '../types/api';
+import { LoginRequest, ApiError, LoginResponse } from "../types/api";
 
-const API_BASE_URL = 'htttp://10.0.0.175:3000';
+const API_BASE_URL = "htttp://10.0.0.175:3000";
 
-export class AuthService{
-  static async login(credentials: LoginRequest): Promise<LoginResponse>{
+export class AuthService {
+  static async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(credentials),
-
     });
 
-    if(!response.ok) {
+    if (!response.ok) {
       const error: ApiError = await response.json();
-      throw new Error(error.message || 'login failed bruh');
+      throw new Error(error.message || "login failed bruh");
     }
-    return response.json()
+    return response.json();
   }
 
   static async logout(): Promise<void> {
     const token = this.getToken();
     await fetch(`${API_BASE_URL}/auth/logout`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
   }
+
   static getToken(): string | null {
-    localStorage.setItem('accessToken', token);
+    return localStorage.getItem("accessToken");
   }
-  static setToken(token: string): void{
-    return localStorage.getItem('accessToken');
+
+  static setToken(token: string): void {
+    localStorage.setItem("accessToken", token);
   }
-  static removeToken(): void{
-    localStorage.removeItem('accessToken')
+
+  static removeToken(): void {
+    localStorage.removeItem("accessToken");
   }
+
   static isAuthenticated(): boolean {
     return !!this.getToken();
   }
-
 }
