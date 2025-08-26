@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
@@ -18,6 +20,7 @@ export class RoomsService {
   constructor(
     @InjectRepository(Room)
     private roomsRepository: Repository<Room>,
+    @Inject(forwardRef(() => RoomsGateway))
     private roomsGateway: RoomsGateway,
   ) {}
 

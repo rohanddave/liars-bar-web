@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import {JwtService } from '@nestjs/jwt';
-import {UnauthorizedException, Injectable} from '@nestjs/common';
+import {UnauthorizedException, Injectable, Inject, forwardRef} from '@nestjs/common';
 import {JwtPayload} from 'src/auth/strategies/jwt.strategy';
 import { RoomsService } from '../service/rooms.service';
 import { Room } from '../entities/room.entity';
@@ -35,6 +35,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => RoomsService))
     private readonly roomsService: RoomsService,
   ) {}
 
@@ -55,16 +56,16 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       this.registerUser(client.id, payload.id);
-      console.log(`Client authenticated and connected: ${client.id} (User: ${payload.username})`)
+      console.log(`Client authenticated and connected: ${client.id} (User: ${payload.username})`);
       
       client.emit('connection_established', {
         status: 'connected',
         userId: payload.id
-      } catch (error) {
-        console.error(`Auth failed: ${error.message}`);
-        client.disconnect(true);
       });
-    
+      
+    } catch (error) {
+      console.error(`Auth failed: ${error.message}`);
+      client.disconnect(true);
     }
 
 
@@ -156,23 +157,23 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.userRooms.set(userId, rooms.filter(id => id !== data.roomId));
     }
     // Notify other users in the room
-    client.to(`room_${roomId}`).emit('user_left_room', {
+    client.to(`room_${data.roomId}`).emit('user_left_room', {
       socketId: client.id,
       userId: userId,
-      roomId: roomId,
+      roomId: data.roomId,
     });
 
     // Send updated room state to remaining users
-    const updatedRoom = this.getRoom(roomId);
+    const updatedRoom = this.getRoom(data.roomId);
     if (updatedRoom) {
-      this.server.to(`room_${roomId}`).emit('room_state', {
-        roomId: roomId,
+      this.server.to(`room_${data.roomId}`).emit('room_state', {
+        roomId: data.roomId,
         room: updatedRoom,
       });
     }
 
     // Notify the leaving user of successful departure
-    client.emit('room_left', { roomId, success });
+    client.emit('room_left', { roomId: data.roomId, success: true });
   }
 
   @SubscribeMessage(GameEventType.GAME_STARTED)
