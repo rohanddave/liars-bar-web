@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { isAuthenticated, getUser } from '../../lib/auth';
+import { isAuthenticated, getUser, logout } from '../../lib/auth';
+import { roomsApi } from '../../api';
 
 export default function Rooms() {
   const router = useRouter();
@@ -14,36 +15,72 @@ export default function Rooms() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [roomCode, setRoomCode] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-      return;
-    }
-    
-    setUser(getUser());
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      if (!isAuthenticated()) {
+        router.push('/login');
+        return;
+      }
+      
+      try {
+        const userData = await getUser();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error getting user:', error);
+        router.push('/login');
+        return;
+      }
+      
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, [router]);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
     try {
-      const roomId = Date.now().toString();
+      const response = await roomsApi.createRoom({
+        password: isPrivate ? 'defaultPassword' : ''
+      });
       
-      router.push(`/room/${roomId}`);
-    } catch (error) {
-      console.error('Error creating room:', error);
+      router.push(`/room/${response.roomId}`);
+    } catch (error: any) {
+      setError(error.response?.data?.message || error.message || 'Failed to create room');
       setIsLoading(false);
     }
   };
 
-  const handleJoinRoom = (e: React.FormEvent) => {
+  const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCode.trim()) return;
     
-    router.push(`/room/${roomCode}`);
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      await roomsApi.joinRoom(roomCode, { password: '' });
+      router.push(`/room/${roomCode}`);
+    } catch (error: any) {
+      setError(error.response?.data?.message || error.message || 'Failed to join room');
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      router.push('/login');
+    }
   };
 
   if (isLoading) {
@@ -65,12 +102,26 @@ export default function Rooms() {
             ← Back to Home
           </Link>
           <h1 className="text-4xl font-bold text-red-400">Game Rooms</h1>
-          <div className="text-red-300 text-sm">
-            Welcome, {user?.username || 'Player'}
+          <div className="flex items-center gap-4">
+            <div className="text-red-300 text-sm">
+              Welcome, {user?.username || 'Player'}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1 rounded transition-colors"
+            >
+              Logout
+            </button>
           </div>
         </div>
 
         <div className="max-w-4xl mx-auto">
+          {error && (
+            <div className="bg-red-900/50 border border-red-600/50 rounded-lg p-3 mb-6">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
+          
           <div className="grid md:grid-cols-2 gap-8">
             {/* Join Room */}
             <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-red-700/30 p-6">

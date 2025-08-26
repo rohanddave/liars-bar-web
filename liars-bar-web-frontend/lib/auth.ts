@@ -1,54 +1,61 @@
-import { ApiError, LoginRequest, LoginResponse } from "@/types/api";
-import { getToken, setToken } from "./util";
-
-const API_BASE_URL = "htttp://10.0.0.175:3000";
+import { LoginRequest } from "@/types/api";
+import { authApi, usersApi } from "@/api";
+import { getToken } from "./util";
 
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
 
-  const token = localStorage.getItem("auth_token");
-  const user = localStorage.getItem("user");
-
-  return !!(token && user);
+  const token = getToken();
+  return !!token;
 }
 
-export function getUser() {
+export async function getUser() {
   if (typeof window === "undefined") return null;
 
-  const user = localStorage.getItem("user");
-  return user ? JSON.parse(user) : null;
+  // Try to get user from localStorage first
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error('Error parsing stored user:', error);
+    }
+  }
+
+  // If not in localStorage or invalid, fetch from API
+  try {
+    const user = await usersApi.getCurrentUser();
+    localStorage.setItem("user", JSON.stringify(user));
+    return user;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    return null;
+  }
 }
 
-export async function logout() {
-  if (typeof window === "undefined") return;
-
-  localStorage.removeItem("auth_token");
-  localStorage.removeItem("user");
-
-  const token = getToken();
-  await fetch(`${API_BASE_URL}/auth/logout`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export async function logout(): Promise<void> {
+  try {
+    await authApi.logout();
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+  
+  // Always clear local storage
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+  }
 }
 
 export async function login(credentials: LoginRequest): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
-  });
-
-  if (!response.ok) {
-    const error: ApiError = await response.json();
-    throw new Error(error.message || "login failed bruh");
+  try {
+    await authApi.login(credentials);
+    
+    // Fetch and store user data
+    const user = await usersApi.getCurrentUser();
+    localStorage.setItem("user", JSON.stringify(user));
+    
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || error.message || "Login failed");
   }
-
-  const data: LoginResponse = await response.json();
-  const { access_token } = data;
-  setToken(access_token);
 }

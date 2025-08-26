@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { isAuthenticated } from '../../../lib/auth';
+import { roomsApi } from '../../../api';
 
 interface Player {
   id: string;
@@ -25,6 +27,7 @@ interface GameState {
 
 export default function Room() {
   const params = useParams();
+  const router = useRouter();
   const roomId = params.id as string;
   
   const [players, setPlayers] = useState<Player[]>([
@@ -43,9 +46,35 @@ export default function Room() {
   const [claimCard, setClaimCard] = useState('A');
   const [claimCount, setClaimCount] = useState(1);
   const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   
   const cardSuits = ['♠', '♥', '♣', '♦'];
   const cardValues = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+  useEffect(() => {
+    const initializeRoom = async () => {
+      // Check authentication
+      if (!isAuthenticated()) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        // Fetch room details
+        const roomDetails = await roomsApi.getRoomDetails(roomId);
+        // Here you would update your component state with room details
+        console.log('Room details:', roomDetails);
+        
+        setIsLoading(false);
+      } catch (error: any) {
+        setError(error.response?.data?.message || error.message || 'Failed to load room');
+        setIsLoading(false);
+      }
+    };
+
+    initializeRoom();
+  }, [roomId, router]);
 
   const handleCardSelect = (card: string) => {
     if (selectedCards.includes(card)) {
@@ -83,6 +112,31 @@ export default function Room() {
   const startGame = () => {
     setGameState(prev => ({ ...prev, phase: 'playing' }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-black flex items-center justify-center">
+        <div className="text-red-400 text-xl">Loading room...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-black flex items-center justify-center">
+        <div className="bg-black/50 backdrop-blur-sm p-8 rounded-lg border border-red-700/30 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+          <p className="text-red-200 mb-6">{error}</p>
+          <Link
+            href="/rooms"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+          >
+            Back to Rooms
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-black">

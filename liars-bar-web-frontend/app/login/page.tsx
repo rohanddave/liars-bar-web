@@ -1,23 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { login } from '../../lib/auth';
 
 export default function Login() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
-    // TODO: Implement login logic
-    console.log('Login attempt:', { username, password });
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await login({ username, password });
+      router.push('/rooms');
+    } catch (error: any) {
+      setError(error.message || 'Login failed');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -27,6 +33,12 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-red-400 mb-2">Liar's Bar</h1>
           <p className="text-red-200">Enter your credentials to play</p>
         </div>
+
+        {error && (
+          <div className="bg-red-900/50 border border-red-600/50 rounded-lg p-3 mb-6">
+            <p className="text-red-200 text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
