@@ -1,8 +1,8 @@
 # Use a Node.js Alpine-based image for the development stage
 FROM node:18-alpine
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install Nest CLI globally
+RUN npm install -g @nestjs/cli
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -10,14 +10,14 @@ WORKDIR /usr/src/app
 # Copy application dependency manifests to the container image
 COPY package*.json ./
 
-# Install application dependencies using `pnpm install`
-RUN pnpm install
+# Install application dependencies using `npm install`
+RUN npm install --legacy-peer-deps
 
 # Copy the rest of the application code to the container
 COPY . .
 
-# Build the application (if needed)
-RUN pnpm run build
+# Build the NestJS application
+RUN npm run build
 
-# Define the command to start your application in development mode
-ENTRYPOINT ["/bin/sh", "-c", "pnpm run start"]
+# Define the command to start your application in development mode with hot reloading
+CMD ["npm", "run", "start:dev"]

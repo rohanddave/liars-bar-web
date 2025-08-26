@@ -2,12 +2,13 @@ version: '3.8'
 
 services:
   nestjs-app:
-    image: nest-api
-    container_name: nestjs-app
+    image: nest-api-dev
+    container_name: nestjs-app-dev
     build:
       dockerfile: dockerfile
       context: .
     environment:
+      - NODE_ENV=development
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
@@ -17,24 +18,42 @@ services:
       - RUN_MIGRATIONS=true
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - JWT_SECRET=your-secret-key-here-change-in-production
+      - JWT_EXPIRY=24h
     ports:
       - '0.0.0.0:3000:3000'
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    stdin_open: true
+    tty: true
     depends_on:
       - db
       - redis
+    restart: unless-stopped
 
   db:
-    image: postgres:latest
-    container_name: postgres-db
+    image: postgres:15-alpine
+    container_name: postgres-db-dev
     environment:
       - POSTGRES_DB=oneprediction
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=oneprediction
     ports:
       - '0.0.0.0:5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   redis:
-    image: redis:latest
-    container_name: redis
+    image: redis:7-alpine
+    container_name: redis-dev
     ports:
       - '0.0.0.0:6379:6379'
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
