@@ -316,20 +316,7 @@ export default function Room() {
             {/* Chat */}
             <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-red-700/30 p-6">
               <h3 className="text-lg font-semibold text-red-300 mb-4">Chat</h3>
-              <div className="h-64 bg-black/20 rounded border border-red-700/30 p-3 mb-3 overflow-y-auto">
-                <div className="text-red-200/60 text-sm space-y-2">
-                  <div>
-                    <span className="text-green-400">Alice:</span> Let's play!
-                  </div>
-                  <div>
-                    <span className="text-blue-400">Bob:</span> I'm ready
-                  </div>
-                  <div>
-                    <span className="text-yellow-400">System:</span> Charlie
-                    joined the room
-                  </div>
-                </div>
-              </div>
+              <div className="h-64 bg-black/20 rounded border border-red-700/30 p-3 mb-3 overflow-y-auto"></div>
               <div className="flex gap-2">
                 <input
                   type="text"
