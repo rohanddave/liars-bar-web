@@ -34,9 +34,9 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private games = new Map<string, IGame>(); // roomId -> Game instance
 
   constructor(
-    private readonly jwtServer,
+    private readonly jwtService: JwtService,
     private readonly roomsService: RoomsService,
-  ){}
+  ) {}
 
 
   handleConnection(client: Socket) {
@@ -117,7 +117,7 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return {success: false, message: 'Auth required'};
     }
     try {
-      const isAuthorized = await this.verifyRoomAccess(userId, data.roomId);
+      const isAuthorized = await this.roomsService.checkUserRoomAccess(userId, data.roomId);
 
       if (!isAuthorized){
         client.emit('error', {message: 'not Auth for room'});
