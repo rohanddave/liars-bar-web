@@ -35,7 +35,8 @@ export interface JoinRoomResponse {
 export interface RoomDetails {
   roomId: string;
   players: string[];
-  isGame: boolean;
+  hostUserId: string;
+  // isGame: boolean;
   maxPlayers: number;
 }
 
