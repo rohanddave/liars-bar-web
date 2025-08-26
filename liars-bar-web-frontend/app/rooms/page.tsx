@@ -36,7 +36,7 @@ export default function Rooms() {
         password: trimmedRoomPassword,
       });
 
-      router.push(`/room/${response.roomId}`);
+      router.push(`/room/${response.id}`);
     } catch (error: any) {
       setError(
         error.response?.data?.message ||

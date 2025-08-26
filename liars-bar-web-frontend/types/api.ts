@@ -19,7 +19,7 @@ export interface CreateRoomRequest {
 }
 
 export interface CreateRoomResponse {
-  roomId: string;
+  id: string;
   message?: string;
 }
 
@@ -33,7 +33,7 @@ export interface JoinRoomResponse {
 }
 
 export interface RoomDetails {
-  roomId: string;
+  id: string;
   players: string[];
   hostUserId: string;
   // isGame: boolean;
