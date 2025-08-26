@@ -3,40 +3,24 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { isAuthenticated, getUser, logout } from "../../lib/auth";
 import { roomsApi } from "../../api";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Rooms() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [roomPassword, setRoomPassword] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [roomCode, setRoomCode] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      if (!isAuthenticated()) {
-        router.push("/login");
-        return;
-      }
-
-      try {
-        const userData = await getUser();
-        setUser(userData);
-      } catch (error) {
-        console.error("Error getting user:", error);
-        router.push("/login");
-        return;
-      }
-
-      setIsLoading(false);
-    };
-
-    initializeAuth();
-  }, [router]);
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,12 +81,16 @@ export default function Rooms() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-black flex items-center justify-center">
         <div className="text-red-400 text-xl">Loading...</div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Router will redirect to login
   }
 
   return (

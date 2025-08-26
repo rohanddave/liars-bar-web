@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { isAuthenticated } from "../../../lib/auth";
 import { roomsApi } from "../../../api";
 import { RoomDetails } from "@/types/api";
+import { useAuth } from "../../../contexts/AuthContext";
 
 interface GameState {
   phase: "waiting" | "playing" | "finished";
@@ -21,6 +21,7 @@ interface GameState {
 export default function Room() {
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const roomId = params.id as string;
   const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
 
@@ -37,7 +38,6 @@ export default function Room() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const cardSuits = ["♠", "♥", "♣", "♦"];
   const cardValues = [
     "A",
     "2",
@@ -56,32 +56,34 @@ export default function Room() {
 
   useEffect(() => {
     const initializeRoom = async () => {
+      // Wait for auth loading to complete
+      if (authLoading) return;
+
       // Check authentication
-      if (!isAuthenticated()) {
+      if (!isAuthenticated) {
         router.push("/login");
         return;
       }
 
       try {
+        setIsLoading(true);
         // Fetch room details
         const roomDetails = await roomsApi.getRoomDetails(roomId);
         setRoomDetails(roomDetails);
-        // Here you would update your component state with room details
         console.log("Room details:", roomDetails);
-
-        setIsLoading(false);
       } catch (error: any) {
         setError(
           error.response?.data?.message ||
             error.message ||
             "Failed to load room"
         );
+      } finally {
         setIsLoading(false);
       }
     };
 
     initializeRoom();
-  }, [roomId, router]);
+  }, [roomId, router, authLoading, isAuthenticated]);
 
   const handleCardSelect = (card: string) => {
     if (selectedCards.includes(card)) {
@@ -120,12 +122,16 @@ export default function Room() {
     setGameState((prev) => ({ ...prev, phase: "playing" }));
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-black flex items-center justify-center">
         <div className="text-red-400 text-xl">Loading room...</div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Router will redirect to login
   }
 
   if (error) {
@@ -295,7 +301,7 @@ export default function Room() {
                     {isReady ? "Ready!" : "Not Ready"}
                   </button>
 
-                  {roomDetails?.hostUserId === "test" && (
+                  {roomDetails?.hostUserId === user?.id && (
                     <button
                       onClick={startGame}
                       className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded font-semibold transition-colors"

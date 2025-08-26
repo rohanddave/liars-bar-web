@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '../../lib/auth';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Login() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,6 +20,8 @@ export default function Login() {
     
     try {
       await login({ username, password });
+      // Refresh the user data in global state after successful login
+      await refreshUser();
       router.push('/rooms');
     } catch (error: any) {
       setError(error.message || 'Login failed');
