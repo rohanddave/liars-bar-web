@@ -1,8 +1,10 @@
-import { Controller, Post, Param, Body } from '@nestjs/common';
+import { Controller, Post, Param, Body, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { RoomsService } from '../service/rooms.service';
 import { CreateRoomDto } from '../dto/create-room.dto';
 import { JoinRoomDto } from '../dto/join-room.dto';
+import { GetCurrentUser, CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Room } from '../entities/room.entity';
 
 @ApiTags('Rooms')
 @ApiBearerAuth()
@@ -22,20 +24,7 @@ export class RoomsController {
   @ApiResponse({
     status: 201,
     description: 'Room created successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'Room ID',
-          example: 'room-123'
-        },
-        message: {
-          type: 'string',
-          example: 'Room created successfully'
-        }
-      }
-    }
+    type: Room
   })
   @ApiResponse({
     status: 401,
@@ -45,8 +34,11 @@ export class RoomsController {
     status: 400,
     description: 'Invalid input data'
   })
-  createRoom(@Body() body: CreateRoomDto) {
-    return '';
+  async createRoom(
+    @Body() createRoomDto: CreateRoomDto,
+    @GetCurrentUser() currentUser: CurrentUser,
+  ): Promise<Room> {
+    return this.roomsService.createRoom(createRoomDto, currentUser.userId);
   }
 
   @Post(':id/join')
@@ -67,19 +59,7 @@ export class RoomsController {
   @ApiResponse({
     status: 201,
     description: 'Successfully joined room',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Successfully joined room'
-        },
-        roomId: {
-          type: 'string',
-          example: 'room-123'
-        }
-      }
-    }
+    type: Room
   })
   @ApiResponse({
     status: 401,
@@ -90,10 +70,63 @@ export class RoomsController {
     description: 'Room not found'
   })
   @ApiResponse({
-    status: 403,
-    description: 'Invalid room password'
+    status: 400,
+    description: 'Invalid room password or room full'
   })
-  joinRoom(@Param('id') id: string, @Body() body: JoinRoomDto) {
-    return '';
+  @ApiResponse({
+    status: 409,
+    description: 'User already in room'
+  })
+  async joinRoom(
+    @Param('id') roomId: string,
+    @Body() joinRoomDto: JoinRoomDto,
+    @GetCurrentUser() currentUser: CurrentUser,
+  ): Promise<Room> {
+    return this.roomsService.joinRoom(roomId, joinRoomDto, currentUser.userId);
+  }
+
+  @Get('my-rooms')
+  @ApiOperation({
+    summary: 'Get user rooms',
+    description: 'Get all rooms the authenticated user is currently in'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of user rooms',
+    type: [Room]
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required'
+  })
+  async getUserRooms(@GetCurrentUser() currentUser: CurrentUser): Promise<Room[]> {
+    return this.roomsService.findUserRooms(currentUser.userId);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get room details',
+    description: 'Get details of a specific room'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Room ID',
+    type: 'string'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Room details',
+    type: Room
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Room not found'
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required'
+  })
+  async getRoomDetails(@Param('id') roomId: string): Promise<Room> {
+    return this.roomsService.findRoom(roomId);
   }
 }
