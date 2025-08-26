@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Delete, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from '../service/users.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { User } from '../entities/user.entity';
 import { Public } from '../../auth/decorators/public.decorator';
+import { GetCurrentUser, CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Users')
 @Controller('users')
@@ -37,61 +38,41 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get(':id')
+  @Get('me')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get user by ID',
-    description: 'Retrieve user information by user ID (requires authentication)'
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'User UUID',
-    type: 'string',
-    format: 'uuid'
+    summary: 'Get current user profile',
+    description: 'Retrieve the authenticated user\'s profile information'
   })
   @ApiResponse({
     status: 200,
-    description: 'User found',
+    description: 'Current user profile',
     type: User
   })
   @ApiResponse({
-    status: 404,
-    description: 'User not found'
-  })
-  @ApiResponse({
     status: 401,
     description: 'Unauthorized - JWT token required'
   })
-  async findOne(@Param('id') id: string): Promise<User> {
-    return this.usersService.findOne(id);
+  async getCurrentUser(@GetCurrentUser() currentUser: CurrentUser): Promise<User> {
+    return this.usersService.findOne(currentUser.userId);
   }
 
-  @Delete(':id')
+  @Delete('me')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete user',
-    description: 'Delete user by ID (requires authentication)'
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'User UUID',
-    type: 'string',
-    format: 'uuid'
+    summary: 'Delete current user',
+    description: 'Delete the authenticated user\'s account'
   })
   @ApiResponse({
     status: 204,
-    description: 'User deleted successfully'
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found'
+    description: 'User account deleted successfully'
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - JWT token required'
   })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.usersService.remove(id);
+  async removeCurrentUser(@GetCurrentUser() currentUser: CurrentUser): Promise<void> {
+    return this.usersService.remove(currentUser.userId);
   }
 }
