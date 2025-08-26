@@ -14,10 +14,10 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('OnePrediction')
-    .setDescription('The OnePrediction API')
+    .setTitle('Liars Bar')
+    .setDescription('API for Liars Bar game')
     .setVersion('1.0')
-    .addTag('OP')
+    .addTag('liars-bar')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
