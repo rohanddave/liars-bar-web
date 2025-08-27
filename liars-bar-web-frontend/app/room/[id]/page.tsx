@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { roomsApi } from "../../../api";
 import { RoomDetails } from "@/types/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import { getSocketService, RoomEventData } from "../../../lib/socket";
 
 interface GameState {
   phase: "waiting" | "playing" | "finished";
@@ -37,6 +38,10 @@ export default function Room() {
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [roomMessages, setRoomMessages] = useState<string[]>([]);
+  const [chatMessage, setChatMessage] = useState("");
+  const [connectedPlayers, setConnectedPlayers] = useState<string[]>([]);
 
   const cardValues = [
     "A",
@@ -54,6 +59,35 @@ export default function Room() {
     "K",
   ];
 
+  // WebSocket event handlers
+  const handleUserJoined = useCallback((data: RoomEventData) => {
+    setRoomMessages(prev => [...prev, `User joined room`]);
+    if (data.userId && !connectedPlayers.includes(data.userId)) {
+      setConnectedPlayers(prev => [...prev, data.userId!]);
+    }
+  }, [connectedPlayers]);
+
+  const handleUserLeft = useCallback((data: RoomEventData) => {
+    setRoomMessages(prev => [...prev, `User left room`]);
+    if (data.userId) {
+      setConnectedPlayers(prev => prev.filter(id => id !== data.userId));
+    }
+  }, []);
+
+  const handleRoomState = useCallback((data: any) => {
+    console.log('Room state update:', data);
+    if (data.room) {
+      setRoomDetails(data.room);
+      setConnectedPlayers(data.room.players || []);
+    }
+  }, []);
+
+  const handleSocketError = useCallback((error: any) => {
+    console.error('Socket error:', error);
+    setRoomMessages(prev => [...prev, `Error: ${error.message || 'Connection error'}`]);
+  }, []);
+
+  // Initialize room and WebSocket connection
   useEffect(() => {
     const initializeRoom = async () => {
       // Wait for auth loading to complete
@@ -67,10 +101,48 @@ export default function Room() {
 
       try {
         setIsLoading(true);
-        // Fetch room details
+        setError("");
+
+        // Fetch room details first
         const roomDetails = await roomsApi.getRoomDetails(roomId);
         setRoomDetails(roomDetails);
-        console.log("Room details:", roomDetails);
+        setConnectedPlayers(roomDetails.players || []);
+        
+        console.log("Room details loaded:", roomDetails);
+
+        // Initialize WebSocket connection
+        const socketService = getSocketService();
+        
+        try {
+          await socketService.connect();
+          setSocketConnected(true);
+          console.log("✅ Socket connected");
+
+          // Set up event listeners
+          const unsubJoined = socketService.onUserJoinedRoom(handleUserJoined);
+          const unsubLeft = socketService.onUserLeftRoom(handleUserLeft);
+          const unsubRoomState = socketService.onRoomState(handleRoomState);
+          const unsubError = socketService.onError(handleSocketError);
+
+          // Join the room via WebSocket
+          await socketService.joinRoom(roomId);
+          setRoomMessages(prev => [...prev, "Connected to room"]);
+
+          // Cleanup function
+          return () => {
+            unsubJoined();
+            unsubLeft();
+            unsubRoomState();
+            unsubError();
+            socketService.leaveRoom(roomId).catch(console.error);
+          };
+
+        } catch (socketError: any) {
+          console.error("Socket connection failed:", socketError);
+          setRoomMessages(prev => [...prev, `Socket error: ${socketError.message}`]);
+          // Continue without socket connection
+        }
+
       } catch (error: any) {
         setError(
           error.response?.data?.message ||
@@ -82,8 +154,13 @@ export default function Room() {
       }
     };
 
-    initializeRoom();
-  }, [roomId, router, authLoading, isAuthenticated]);
+    const cleanup = initializeRoom();
+    
+    // Cleanup on unmount
+    return () => {
+      cleanup?.then?.(cleanupFn => cleanupFn?.());
+    };
+  }, [roomId, router, authLoading, isAuthenticated, handleUserJoined, handleUserLeft, handleRoomState, handleSocketError]);
 
   const handleCardSelect = (card: string) => {
     if (selectedCards.includes(card)) {
@@ -115,7 +192,22 @@ export default function Room() {
 
   const handleReady = () => {
     setIsReady(!isReady);
-    // TODO: Send ready state to server
+    // TODO: Send ready state to server via WebSocket
+    const socketService = getSocketService();
+    socketService.emit('player_ready', { roomId, ready: !isReady });
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    
+    setRoomMessages(prev => [...prev, `You: ${chatMessage}`]);
+    
+    // TODO: Send message via WebSocket
+    const socketService = getSocketService();
+    socketService.emit('chat_message', { roomId, message: chatMessage });
+    
+    setChatMessage("");
   };
 
   const startGame = () => {
@@ -163,10 +255,18 @@ export default function Room() {
             ← Leave Room
           </Link>
           <h1 className="text-2xl font-bold text-red-400">Room #{roomId}</h1>
-          <div className="text-red-300">
-            {gameState.phase === "waiting"
-              ? "Waiting to start"
-              : "Game in progress"}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span className="text-sm text-red-300">
+                {socketConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+            <div className="text-red-300">
+              {gameState.phase === "waiting"
+                ? "Waiting to start"
+                : "Game in progress"}
+            </div>
           </div>
         </div>
 
@@ -313,20 +413,49 @@ export default function Room() {
               </div>
             )}
 
+            {/* Room Info */}
+            <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-red-700/30 p-4 mb-6">
+              <h3 className="text-lg font-semibold text-red-300 mb-3">Room Info</h3>
+              <div className="text-red-200/80 space-y-1 text-sm">
+                <p><strong>Players:</strong> {connectedPlayers.length}/{roomDetails?.maxPlayers || 0}</p>
+                <p><strong>Host:</strong> {roomDetails?.hostUserId === user?.id ? 'You' : 'Other'}</p>
+                <p><strong>Status:</strong> {socketConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
+              </div>
+            </div>
+
             {/* Chat */}
             <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-red-700/30 p-6">
-              <h3 className="text-lg font-semibold text-red-300 mb-4">Chat</h3>
-              <div className="h-64 bg-black/20 rounded border border-red-700/30 p-3 mb-3 overflow-y-auto"></div>
-              <div className="flex gap-2">
+              <h3 className="text-lg font-semibold text-red-300 mb-4">
+                Chat & Events
+              </h3>
+              <div className="h-48 bg-black/20 rounded border border-red-700/30 p-3 mb-3 overflow-y-auto">
+                {roomMessages.map((message, index) => (
+                  <div key={index} className="text-red-200/80 text-sm mb-1">
+                    {message}
+                  </div>
+                ))}
+                {roomMessages.length === 0 && (
+                  <div className="text-red-400/50 text-sm italic">
+                    No messages yet...
+                  </div>
+                )}
+              </div>
+              <form onSubmit={handleSendMessage} className="flex gap-2">
                 <input
                   type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="Type a message..."
                   className="flex-1 px-3 py-2 bg-black/30 border border-red-700/50 rounded text-white placeholder-red-400/50 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
-                <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                <button 
+                  type="submit"
+                  disabled={!chatMessage.trim() || !socketConnected}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm transition-colors"
+                >
                   Send
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
